@@ -12,17 +12,16 @@
 
     <script>
         async function medirVelocidade() {
+            const fileSizeInBytes = 1048576 * 10; // 10MB
+            const testFile = "https://speed.hetzner.de/10MB.bin"; // Arquivo de teste
             try {
-                const st = await fetch("https://www.speedtest.net/api/js/servers?https_functional=true");
-                const servers = await st.json();
-                const server = servers[0].url;
-                
                 const startTime = performance.now();
-                await fetch(server);
+                await fetch(testFile, { cache: "no-cache", mode: "no-cors" });
                 const endTime = performance.now();
-
-                const duration = (endTime - startTime) / 1000; // Tempo em segundos
-                const speedMbps = (100 * 8) / duration; // 100MB * 8 bits para Mbps
+                
+                const durationInSeconds = (endTime - startTime) / 1000;
+                const speedMbps = (fileSizeInBytes / 1024 / 1024 * 8) / durationInSeconds;
+                
                 return speedMbps.toFixed(2);
             } catch (error) {
                 return "Erro ao medir velocidade";
@@ -55,7 +54,7 @@
                 info["Núcleos da CPU"] = navigator.hardwareConcurrency;
             }
 
-            // Medir velocidade de download
+            // Medir velocidade de download do cliente
             info["Velocidade de Download (Mbps)"] = await medirVelocidade();
 
             // Enviar os dados para o servidor Flask
