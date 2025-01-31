@@ -3,30 +3,23 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Executar Diagnóstico</title>
+    <title>Diagnóstico do Sistema</title>
 </head>
 <body>
-    <h2>Executar Diagnóstico de Rede</h2>
+    <h2>Executar Diagnóstico</h2>
     <button onclick="executarDiagnostico()">Iniciar Coleta</button>
-    <p id="resultado"></p>
+    <pre id="resultado"></pre>
 
     <script>
         function executarDiagnostico() {
-            // Caminho do executável local (ajuste conforme necessário)
-            var caminhoExecutavel = "C:\\temp\\coleta.exe";
-
-            // Verifica se está rodando localmente (não funciona na web por segurança)
-            if (window.location.protocol === "file:") {
-                try {
-                    const shell = new ActiveXObject("WScript.Shell");
-                    shell.Run('"' + caminhoExecutavel + '"', 1, true);
-                    document.getElementById("resultado").innerText = "Diagnóstico executado com sucesso!";
-                } catch (e) {
-                    document.getElementById("resultado").innerText = "Erro ao executar o diagnóstico.";
-                }
-            } else {
-                document.getElementById("resultado").innerText = "Este comando só pode ser executado localmente.";
-            }
+            fetch("/coletar")
+                .then(response => response.json())
+                .then(data => {
+                    document.getElementById("resultado").innerText = JSON.stringify(data, null, 4);
+                })
+                .catch(error => {
+                    document.getElementById("resultado").innerText = "Erro ao coletar dados: " + error;
+                });
         }
     </script>
 </body>
