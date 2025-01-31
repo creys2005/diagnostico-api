@@ -7,17 +7,39 @@
 </head>
 <body>
     <h2>Executar Diagnóstico</h2>
-    <button onclick="executarDiagnostico()">Iniciar Coleta</button>
+    <button onclick="coletarInformacoes()">Iniciar Coleta</button>
     <pre id="resultado"></pre>
 
     <script>
-        function executarDiagnostico() {
-            fetch("/coletar")
+        function coletarInformacoes() {
+            const info = {
+                "Navegador": navigator.userAgent,
+                "Plataforma": navigator.platform,
+                "Linguagem": navigator.language,
+                "Resolução de Tela": `${window.screen.width}x${window.screen.height}`
+            };
+
+            fetch("https://api64.ipify.org?format=json")
                 .then(response => response.json())
                 .then(data => {
-                    document.getElementById("resultado").innerText = JSON.stringify(data, null, 4);
+                    info["IP Público"] = data.ip;
+
+                    // Enviar os dados para o servidor Flask
+                    fetch("/coletar", {
+                        method: "POST",
+                        headers: { "Content-Type": "application/json" },
+                        body: JSON.stringify(info)
+                    })
+                    .then(response => response.json())
+                    .then(data => {
+                        document.getElementById("resultado").innerText = JSON.stringify(data, null, 4);
+                    })
+                    .catch(error => {
+                        document.getElementById("resultado").innerText = "Erro ao enviar os dados: " + error;
+                    });
                 })
                 .catch(error => {
+                    info["IP Público"] = "Erro ao obter IP";
                     document.getElementById("resultado").innerText = "Erro ao coletar dados: " + error;
                 });
         }
