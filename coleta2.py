@@ -1,4 +1,5 @@
 from flask import Flask, jsonify
+from ping3 import ping    
 import os
 import socket
 import psutil
@@ -6,7 +7,6 @@ import speedtest
 import requests
 import subprocess
 import json
-from ping3 import ping
 from datetime import datetime
 import platform
 
@@ -51,6 +51,16 @@ def get_system_info():
     }
     return system_info
 
+def run_ping(host):
+    """Executa o comando ping no sistema operacional e retorna a latência em ms."""
+    try:
+        result = subprocess.run(["ping", "-c", "1", host], capture_output=True, text=True, timeout=3)
+        for line in result.stdout.split("\n"):
+            if "time=" in line:
+                return float(line.split("time=")[-1].split(" ")[0])
+    except Exception:
+        return "Indisponível"
+
 def get_network_info():
     """Coleta informações sobre a qualidade da rede."""
     try:
@@ -70,8 +80,8 @@ def get_network_info():
     jitter = round(st.results.server.get("latency", 0), 2) if hasattr(st, 'results') else "Indisponível"
     
     # Testando ping para múltiplos servidores
-    ping_google = round(ping("8.8.8.8") * 1000, 2) if ping("8.8.8.8") else "Indisponível"
-    ping_redeis = round(ping("nfb.redeis.com.br") * 1000, 2) if ping("nfb.redeis.com.br") else "Indisponível"
+    ping_google = run_ping("8.8.8.8")
+    ping_redeis = run_ping("nfb.redeis.com.br")
     
     return {
         "Velocidade de Download (Mbps)": download_speed,
