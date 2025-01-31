@@ -11,6 +11,24 @@
     <pre id="resultado"></pre>
 
     <script>
+        async function medirVelocidade() {
+            try {
+                const st = await fetch("https://www.speedtest.net/api/js/servers?https_functional=true");
+                const servers = await st.json();
+                const server = servers[0].url;
+                
+                const startTime = performance.now();
+                await fetch(server);
+                const endTime = performance.now();
+
+                const duration = (endTime - startTime) / 1000; // Tempo em segundos
+                const speedMbps = (100 * 8) / duration; // 100MB * 8 bits para Mbps
+                return speedMbps.toFixed(2);
+            } catch (error) {
+                return "Erro ao medir velocidade";
+            }
+        }
+
         async function coletarInformacoes() {
             const info = {
                 "Navegador": navigator.userAgent,
@@ -28,7 +46,7 @@
                 info["IP Público"] = "Erro ao obter IP";
             }
 
-            // Coletar informações do hardware (somente para Chromium-based browsers)
+            // Coletar informações do hardware
             if (navigator.deviceMemory) {
                 info["Memória RAM (GB)"] = navigator.deviceMemory;
             }
@@ -37,18 +55,8 @@
                 info["Núcleos da CPU"] = navigator.hardwareConcurrency;
             }
 
-            // Coletar velocidade da internet (Teste de Download)
-            try {
-                const startTime = performance.now();
-                const response = await fetch("https://speed.hetzner.de/100MB.bin"); // Arquivo de teste para medir velocidade
-                await response.blob();
-                const endTime = performance.now();
-                const duration = (endTime - startTime) / 1000; // Tempo em segundos
-                const speedMbps = (100 * 8) / duration; // 100MB * 8 bits para Mbps
-                info["Velocidade de Download (Mbps)"] = speedMbps.toFixed(2);
-            } catch (error) {
-                info["Velocidade de Download (Mbps)"] = "Erro ao medir velocidade";
-            }
+            // Medir velocidade de download
+            info["Velocidade de Download (Mbps)"] = await medirVelocidade();
 
             // Enviar os dados para o servidor Flask
             fetch("/coletar", {
