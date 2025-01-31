@@ -1,5 +1,5 @@
-from flask import Flask, jsonify
 from ping3 import ping    
+from flask import Flask, jsonify
 import os
 import socket
 import psutil
@@ -63,21 +63,21 @@ def run_ping(host):
 
 def get_network_info():
     """Coleta informações sobre a qualidade da rede."""
+    download_speed, upload_speed, latency, jitter = "Erro", "Erro", "Erro", "Indisponível"
     try:
         st = speedtest.Speedtest()
         st.get_best_server()
         download_speed = round(st.download() / (1024 * 1024), 2)  # Convertendo para Mbps
         upload_speed = round(st.upload() / (1024 * 1024), 2)  # Convertendo para Mbps
         latency = round(st.results.ping, 2)
+        jitter = round(st.results.server.get("latency", 0), 2) if hasattr(st, 'results') else "Indisponível"
     except Exception:
-        download_speed, upload_speed, latency = "Erro", "Erro", "Erro"
+        pass
     
     try:
         ip_publico = requests.get("https://api64.ipify.org?format=json").json().get("ip", "Não encontrado")
     except Exception:
         ip_publico = "Erro ao obter IP público"
-    
-    jitter = round(st.results.server.get("latency", 0), 2) if hasattr(st, 'results') else "Indisponível"
     
     # Testando ping para múltiplos servidores
     ping_google = run_ping("8.8.8.8")
