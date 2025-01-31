@@ -1,3 +1,4 @@
+from flask import Flask, jsonify
 import os
 import socket
 import psutil
@@ -8,6 +9,8 @@ import json
 from ping3 import ping
 from datetime import datetime
 import platform
+
+app = Flask(__name__)
 
 def get_system_info():
     """Coleta informações do computador."""
@@ -80,27 +83,9 @@ def get_network_info():
         "Ping RedeIS (ms)": ping_redeis
     }
 
-def save_to_file(data):
-    """Salva as informações coletadas em arquivos locais (TXT e JSON)."""
-    timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
-    readable_timestamp = datetime.now().strftime("%d/%m/%Y %H:%M:%S")
-    txt_filename = f"diagnostico_rede_{timestamp}.txt"
-    json_filename = f"diagnostico_rede_{timestamp}.json"
-    
-    with open(txt_filename, "w", encoding="utf-8") as file:
-        file.write(f"Coleta: {readable_timestamp}\n\n")
-        for category, info in data.items():
-            file.write(f"{category}\n")
-            for key, value in info.items():
-                file.write(f"{key}: {value}\n")
-            file.write("\n")
-    
-    with open(json_filename, "w", encoding="utf-8") as json_file:
-        json.dump({"Data e Hora da Coleta": readable_timestamp, **data}, json_file, indent=4, ensure_ascii=False)
-    
-    return txt_filename, json_filename
-
-def main():
+@app.route('/coletar', methods=['GET'])
+def coletar_dados():
+    """Endpoint para coletar os dados e retornar como JSON."""
     system_info = get_system_info()
     network_info = get_network_info()
     
@@ -109,9 +94,7 @@ def main():
         "Diagnóstico de Rede": network_info
     }
     
-    txt_filename, json_filename = save_to_file(data)
-    
-    print(f"Diagnóstico salvo em:\n{os.path.abspath(txt_filename)}\n{os.path.abspath(json_filename)}")
-    
+    return jsonify(data)
+
 if __name__ == "__main__":
-    main()
+    app.run(host='0.0.0.0', port=5000)
