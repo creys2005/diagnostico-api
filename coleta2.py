@@ -50,22 +50,22 @@ def index():
 
 @app.route('/coletar', methods=['POST'])
 def coletar_dados():
-    """Recebe os dados do cliente, mede a velocidade, executa o tracert e armazena no servidor."""
+    """Recebe os dados do cliente e armazena no servidor."""
     try:
         client_data = request.get_json()
-        client_data.pop("Linguagem", None)
-        client_data.pop("Memória RAM (GB)", None)
-        client_data.pop("Navegador", None)
-        client_data.pop("Núcleos da CPU", None)
-        client_data.pop("Plataforma", None)
-        client_data.pop("Recebido_em", None)
-        client_data.pop("Resolução de Tela", None)
-        client_data.pop("Velocidade de Download (Mbps)", None)
+
+        # Verifica se é uma requisição do tracert local
+        if "Tracert para nfb.redeis.com.br" in client_data:
+            client_data["Recebido_em"] = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
+            salvar_dados(client_data)
+            return jsonify({"status": "sucesso", "mensagem": "Tracert recebido e armazenado"}), 200
+
+        # Caso contrário, processa os outros dados normalmente
         client_data["Diagnóstico de Rede"] = medir_velocidade()
-        client_data["Tracert para nfb.redeis.com.br"] = executar_tracert("nfb.redeis.com.br")
         client_data["Browser"] = request.user_agent.browser
         client_data["Hostname"] = request.remote_addr
         client_data["Recebido_em"] = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
+
         salvar_dados(client_data)
         return jsonify({"status": "sucesso", "dados_recebidos": client_data}), 200
     except Exception as e:
