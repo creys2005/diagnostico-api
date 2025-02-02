@@ -1,24 +1,29 @@
 from flask import Flask, render_template, request, jsonify
 import json
 from datetime import datetime
+import speedtest
 
 app = Flask(__name__)
 
 # Caminho para armazenar os dados coletados
 ARQUIVO_DADOS = "dados_coletados.json"
 
-def converter_velocidade(mbps):
-    """Converte a velocidade de Mbps para outras unidades."""
+def medir_velocidade():
+    """Mede a velocidade de download, upload e latência."""
     try:
-        mbps = float(mbps)
+        st = speedtest.Speedtest()
+        st.get_best_server()
+        download_speed = round(st.download() / (1024 * 1024), 2)  # Convertendo para Mbps
+        upload_speed = round(st.upload() / (1024 * 1024), 2)  # Convertendo para Mbps
+        ping = round(st.results.ping, 2)
+
         return {
-            "Mbps": round(mbps, 2),
-            "MBps (Megabytes por segundo)": round(mbps / 8, 2),
-            "Kbps (Kilobits por segundo)": round(mbps * 1000, 2),
-            "KBps (Kilobytes por segundo)": round(mbps * 125, 2)
+            "Velocidade de Download (Mbps)": download_speed,
+            "Velocidade de Upload (Mbps)": upload_speed,
+            "Latência (ms)": ping
         }
-    except ValueError:
-        return {"Erro": "Velocidade inválida"}
+    except Exception as e:
+        return {"Erro": f"Falha ao medir velocidade: {str(e)}"}
 
 def salvar_dados(data):
     """Salva os dados recebidos no servidor."""
@@ -36,17 +41,12 @@ def index():
 
 @app.route('/coletar', methods=['POST'])
 def coletar_dados():
-    """Recebe os dados do cliente e armazena no servidor."""
+    """Recebe os dados do cliente, mede a velocidade e armazena no servidor."""
     try:
         client_data = request.get_json()
-        
-        # Verificar e converter velocidade de download, se disponível
-        if "Velocidade de Download (Mbps)" in client_data:
-            client_data["Velocidade Convertida"] = converter_velocidade(client_data["Velocidade de Download (Mbps)"])
-
+        client_data["Diagnóstico de Rede"] = medir_velocidade()
         client_data["Recebido_em"] = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
         salvar_dados(client_data)
-
         return jsonify({"status": "sucesso", "dados_recebidos": client_data}), 200
     except Exception as e:
         return jsonify({"status": "erro", "mensagem": str(e)}), 500
