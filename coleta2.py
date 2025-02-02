@@ -7,6 +7,19 @@ app = Flask(__name__)
 # Caminho para armazenar os dados coletados
 ARQUIVO_DADOS = "dados_coletados.json"
 
+def converter_velocidade(mbps):
+    """Converte a velocidade de Mbps para outras unidades."""
+    try:
+        mbps = float(mbps)
+        return {
+            "Mbps": round(mbps, 2),
+            "MBps (Megabytes por segundo)": round(mbps / 8, 2),
+            "Kbps (Kilobits por segundo)": round(mbps * 1000, 2),
+            "KBps (Kilobytes por segundo)": round(mbps * 125, 2)
+        }
+    except ValueError:
+        return {"Erro": "Velocidade inválida"}
+
 def salvar_dados(data):
     """Salva os dados recebidos no servidor."""
     try:
@@ -26,8 +39,14 @@ def coletar_dados():
     """Recebe os dados do cliente e armazena no servidor."""
     try:
         client_data = request.get_json()
+        
+        # Verificar e converter velocidade de download, se disponível
+        if "Velocidade de Download (Mbps)" in client_data:
+            client_data["Velocidade Convertida"] = converter_velocidade(client_data["Velocidade de Download (Mbps)"])
+
         client_data["Recebido_em"] = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
         salvar_dados(client_data)
+
         return jsonify({"status": "sucesso", "dados_recebidos": client_data}), 200
     except Exception as e:
         return jsonify({"status": "erro", "mensagem": str(e)}), 500
