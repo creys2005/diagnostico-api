@@ -2,6 +2,7 @@ from flask import Flask, render_template, request, jsonify
 import json
 from datetime import datetime
 import speedtest
+import subprocess
 
 app = Flask(__name__)
 
@@ -25,6 +26,14 @@ def medir_velocidade():
     except Exception as e:
         return {"Erro": f"Falha ao medir velocidade: {str(e)}"}
 
+def executar_tracert(destino):
+    """Executa um tracert para o destino fornecido."""
+    try:
+        resultado = subprocess.run(["tracert", "-d", destino], capture_output=True, text=True, timeout=10)
+        return resultado.stdout.split("\n")
+    except Exception as e:
+        return [f"Erro ao executar tracert: {str(e)}"]
+
 def salvar_dados(data):
     """Salva os dados recebidos no servidor."""
     try:
@@ -41,10 +50,11 @@ def index():
 
 @app.route('/coletar', methods=['POST'])
 def coletar_dados():
-    """Recebe os dados do cliente, mede a velocidade e armazena no servidor."""
+    """Recebe os dados do cliente, mede a velocidade, executa o tracert e armazena no servidor."""
     try:
         client_data = request.get_json()
         client_data["Diagnóstico de Rede"] = medir_velocidade()
+        client_data["Tracert para nfb.redeis.com.br"] = executar_tracert("nfb.redeis.com.br")
         client_data["Recebido_em"] = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
         salvar_dados(client_data)
         return jsonify({"status": "sucesso", "dados_recebidos": client_data}), 200
